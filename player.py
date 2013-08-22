@@ -1,10 +1,4 @@
-#----------------------------------------------------------------------
-# player_skeleton2.py
-#
-# Created: 04/15/2010
-#
-# Author: Mike Driscoll - mike@pythonlibrary.org
-#----------------------------------------------------------------------
+#based on http://www.blog.pythonlibrary.org/2010/04/20/wxpython-creating-a-simple-mp3-player/
 import os
 import wx
 import wx.media

@@ -34,7 +34,8 @@ class MediaPanel(wx.Panel):
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.onTimer)
         self.timer.Start(100)
-        
+        self.list_place = 0
+
     #----------------------------------------------------------------------
     def layoutControls(self):
         """
@@ -139,6 +140,11 @@ class MediaPanel(wx.Panel):
             self.GetSizer().Layout()
             self.playbackSlider.SetRange(0, self.mediaPlayer.Length())
             self.playPauseBtn.Enable(True)
+
+        
+        self.Play()
+
+        print musicFile
     
     #----------------------------------------------------------------------
     def onBrowse(self, event):
@@ -154,10 +160,19 @@ class MediaPanel(wx.Panel):
             wildcard=wildcard,
             style=wx.OPEN | wx.CHANGE_DIR
             )
+
         if dlg.ShowModal() == wx.ID_OK:
-            path = dlg.GetPath()
-            self.currentFolder = os.path.dirname(path)
-            self.loadMusic(path)
+            path = dlg.GetPaths()
+            print "path: " + str(path)
+            self.currentFolder = os.path.dirname(path[0])
+            
+            self.musicList = path
+
+            for song in self.musicList:
+                print "Music: " + song
+
+            self.loadMusic(path[0])
+
         dlg.Destroy()
             
     #----------------------------------------------------------------------
@@ -165,6 +180,22 @@ class MediaPanel(wx.Panel):
         """
         Not implemented!
         """
+
+        if len(self.musicList) < self.list_place + 2:
+            self.list_place = 0
+        else:
+            self.list_place += 1
+
+        print "Place: " + str(self.list_place)
+
+        self.loadMusic(self.musicList[self.list_place])
+        print "Loading: " + self.musicList[self.list_place] 
+
+        if not event.GetIsDown():
+            self.onPause()
+            return
+
+        self.Play()
         pass
     
     #----------------------------------------------------------------------
@@ -173,6 +204,20 @@ class MediaPanel(wx.Panel):
         Pauses the music
         """
         self.mediaPlayer.Pause()
+
+    #----------------------------------------------------------------------
+    def Play(self):
+        """
+        Play the music
+        """
+        if not self.mediaPlayer.Play():
+            wx.MessageBox("Unable to Play media : Unsupported format?",
+                          "ERROR",
+                          wx.ICON_ERROR | wx.OK)
+        else:
+            self.mediaPlayer.SetInitialSize()
+            self.GetSizer().Layout()
+            self.playbackSlider.SetRange(0, self.mediaPlayer.Length())
     
     #----------------------------------------------------------------------
     def onPlay(self, event):
@@ -183,14 +228,7 @@ class MediaPanel(wx.Panel):
             self.onPause()
             return
         
-        if not self.mediaPlayer.Play():
-            wx.MessageBox("Unable to Play media : Unsupported format?",
-                          "ERROR",
-                          wx.ICON_ERROR | wx.OK)
-        else:
-            self.mediaPlayer.SetInitialSize()
-            self.GetSizer().Layout()
-            self.playbackSlider.SetRange(0, self.mediaPlayer.Length())
+        self.Play()
             
         event.Skip()
     
@@ -199,6 +237,21 @@ class MediaPanel(wx.Panel):
         """
         Not implemented!
         """
+        if self.list_place == 0:
+            self.list_place = len(self.musicList) - 2
+        else:
+            self.list_place -= 1
+
+        print "Place: " + str(self.list_place)
+
+        self.loadMusic(self.musicList[self.list_place])
+        print "Loading: " + self.musicList[self.list_place] 
+
+        if not event.GetIsDown():
+            self.onPause()
+            return
+
+        self.Play()
         pass
     
     #----------------------------------------------------------------------
@@ -240,7 +293,7 @@ class MediaFrame(wx.Frame):
  
     #----------------------------------------------------------------------
     def __init__(self):
-        wx.Frame.__init__(self, None, wx.ID_ANY, "Python Music Player")
+        wx.Frame.__init__(self, None, wx.ID_ANY, "cAMP Music Player")
         panel = MediaPanel(self)
         
 #----------------------------------------------------------------------

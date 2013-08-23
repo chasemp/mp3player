@@ -7,8 +7,6 @@ import wx.lib.buttons as buttons
 from meta import listDirectory
 from meta import MP3FileInfo
 import os.path
-#Experient in name spaces
-from wxPython.wx import *
 
 dirName = os.path.dirname(os.path.abspath(__file__))
 bitmapDir = os.path.join(dirName, 'bitmaps')
@@ -25,8 +23,7 @@ class MediaPanel(wx.Panel):
         self.frame = parent
         self.currentVolume = 50
         self.createMenu()
-        self.musicList = []
-        self.layoutControls(self.musicList)
+        self.layoutControls()
         
         sp = wx.StandardPaths.Get()
         self.currentFolder = sp.GetDocumentsDir()
@@ -35,9 +32,10 @@ class MediaPanel(wx.Panel):
         self.Bind(wx.EVT_TIMER, self.onTimer)
         self.timer.Start(100)
         self.list_place = 0
+        self.musicList = []
 
     #----------------------------------------------------------------------
-    def layoutControls(self, musicList):
+    def layoutControls(self):
         """
         Create and layout the widgets
         """
@@ -63,9 +61,8 @@ class MediaPanel(wx.Panel):
         mainSizer = wx.BoxSizer(wx.VERTICAL)
         hSizer = wx.BoxSizer(wx.HORIZONTAL)
         audioSizer = self.buildAudioBar()
-        songwindow = self.buildSongWindow()
-
-        #ATTEMPT AT NOW PLAYING
+                
+        #ATTEMPT AT SONGTITLE DISPLAY
         self.now_playing = wx.StaticText(self, wx.ID_ANY, 'Now Playing:', (20, 100))
         tSizer = wx.BoxSizer(wx.HORIZONTAL)
         tSizer.Add(self.now_playing, 0, wx.ALL|wx.CENTER, 5)
@@ -82,63 +79,11 @@ class MediaPanel(wx.Panel):
         hSizer.Add(audioSizer, 0, wx.ALL|wx.CENTER, 5)
         hSizer.Add(self.volumeCtrl, 0, wx.ALL|wx.CENTER, 5)
         mainSizer.Add(hSizer)
-        #mainSizer.Add(songwindowSizer, 1, wx.ALL|wx.EXPAND, 5)
-        mainSizer.Add(songwindow, 1, wx.EXPAND, 5)
-
+        
         self.SetSizer(mainSizer)
         self.Layout()
         
     #----------------------------------------------------------------------
-    def addToSongWindow(self, list_place, song):
-
-        # 0 will insert at the start of the list
-        self.songwindow.position = self.songwindow.InsertStringItem(0,str(list_place))
-
-        # add values in the other columns on the same row
-        self.songwindow.SetStringItem(self.songwindow.position,1,song)
-
-        #self.songwindow.Focus(self.songwindow.position)
-
-        #self.songwindow.SetItemState(self.songwindow.position, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED)
-        #self.songwindow.SetItemState(self.songwindow.position, wxLIST_STATE_FOCUSED, wxLIST_STATE_FOCUSED)
-
-        #self.songwindow.SetItemState(self.songwindow.position, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED)
-        #self.songwindow.Select(self.songwindow.position, on=1)
-
-
-    def getSelectedIndices( self, state =  wxLIST_STATE_SELECTED):
-    
-        indices = []
-        lastFound = -1
-        while True:
-                index = self.songwindow.GetNextItem(
-                        lastFound,
-                        wxLIST_NEXT_ALL,
-                        state,
-                )
-                if index == -1:
-                        break
-                else:
-                        lastFound = index
-                        indices.append( index )
-        return indices
-
-    def buildSongWindow(self):
-
-        #SONG WINDOW
-        id=wx.NewId()
-
-        self.songwindow=wx.ListCtrl(self,id, size=(-1,500),style=wx.LC_REPORT|wx.SUNKEN_BORDER)
-        self.songwindow.Show(True)
-
-        self.songwindow.InsertColumn(0,"Track#")
-        self.songwindow.InsertColumn(1,"Song")
-
-        songwindowSizer = wx.BoxSizer(wx.HORIZONTAL)
-        songwindowSizer.Add(self.songwindow, 1, wx.ALL, 5)
-
-        return songwindowSizer
-
     def buildAudioBar(self):
         """
         Builds the audio bar controls
@@ -202,8 +147,24 @@ class MediaPanel(wx.Panel):
 
         self.frame.Bind(wx.EVT_MENU, self.onBrowseAdd, add_file_menu_item)
 
-    #----------------------------------------------------------------------
+    def createStatusBar(self):
+        """
+        NOT IMPLEMENTED
+        Creates a status bar
+        """
+        statusbar = wx.StatusBar()
+        
+        fileMenu = wx.Menu()
+        open_file_menu_item = fileMenu.Append(wx.NewId(), "&Open", "Open a file")
+        add_file_menu_item = fileMenu.Append(wx.NewId(), "&Add", "Add files")
 
+        menubar.Append(fileMenu, '&File')
+        self.frame.SetMenuBar(menubar)
+        self.frame.Bind(wx.EVT_MENU, self.onBrowse, open_file_menu_item)
+
+        self.frame.Bind(wx.EVT_MENU, self.onBrowseAdd, add_file_menu_item)
+        
+    #----------------------------------------------------------------------
     def loadMusic(self, musicFile):
         """"""
         if not self.mediaPlayer.Load(musicFile):
@@ -216,25 +177,7 @@ class MediaPanel(wx.Panel):
             self.playbackSlider.SetRange(0, self.mediaPlayer.Length())
             self.playPauseBtn.Enable(True)
 
-        metainfo = self.getSongInfo(musicFile)
-
-        self.songTitle.SetLabel(metainfo['songinfo'])
-
-        self.Play()
-
-        self.songwindow.SetItemState(self.songwindow.position, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED)
-
-        print self.getSelectedIndices()
-
-    def getSongInfo(self, song):
-
-        """
-        {'album': 'Juno OST', 'comment': 'Ellen Page Online - www.elle', \
-        'name': u'/Volumes/My Book/noise/MISC/Juno Soundtrack/11-Expectations.mp3', \
-        'title': 'Expectations', 'artist': 'Belle & Sebastian', 'year': '2007', 'genre': 24}
-        """
-
-        metatag = MP3FileInfo(song)
+        metatag = MP3FileInfo(musicFile)
 
         if 'artist' in metatag:
             if 'title' in metatag:
@@ -244,20 +187,23 @@ class MediaPanel(wx.Panel):
             metatag['artist'] = "!ID3"
 
         if 'title' not in metatag:
-	    title = os.path.basename(metatag['name'].strip(".mp3"))
+	    title = os.path.basename(musicFile.strip(".mp3"))
             metatag['title'] = title
             songinfo = "%s" % (metatag['title'])
 
-        metatag['songinfo'] = songinfo
 
-        return metatag
+
+
+        self.songTitle.SetLabel(songinfo)
+        self.Play()
+
+        print musicFile
 
     #----------------------------------------------------------------------
     def onBrowseAdd(self, event, append=False):
         """
         Opens file dialog to browse for music
         """
-
         if append:
             print "I should append"
 
@@ -281,23 +227,12 @@ class MediaPanel(wx.Panel):
 
             for song in path:
                 print "Adding: " + song
-
-                #Get dict of song info some ID3 some file name compensating if missing
-                metainfo = self.getSongInfo(song)
-
-                #Add file to global playlist
                 self.musicList.append(song)
 
-                #Find index location of file in playlist            
-                list_place = self.musicList.index(song)
-               
-                #Make sure track shows up playlist window
-                self.addToSongWindow(list_place, metainfo['songinfo'])
-
+            #self.allPlay(self.musicList)
             self.loadMusic(self.musicList[self.list_place])
 
         dlg.Destroy()
-
     #----------------------------------------------------------------------
     def onBrowse(self, event, append=False):
         """
@@ -368,6 +303,7 @@ class MediaPanel(wx.Panel):
         """
         Play the music
         """
+
         if not self.mediaPlayer.Play():
             wx.MessageBox("Unable to Play media : Unsupported format?",
                           "ERROR",
@@ -474,9 +410,8 @@ class MediaPanel(wx.Panel):
 
  
         #print "state " + str(state)
-        if not self.mediaPlayer.Stop():
-            if state == 0 and self.musicList:
-                self.Next()
+        if state == 0 and self.musicList:
+            self.Next()
 
 
 ########################################################################

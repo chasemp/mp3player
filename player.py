@@ -157,11 +157,19 @@ class MediaPanel(wx.Panel):
         fileMenu = wx.Menu()
         open_file_menu_item = fileMenu.Append(wx.NewId(), "&Open", "Open a file")
         add_file_menu_item = fileMenu.Append(wx.NewId(), "&Add", "Add files")
+<<<<<<< HEAD
 
         menubar.Append(fileMenu, '&File')
         self.frame.SetMenuBar(menubar)
         self.frame.Bind(wx.EVT_MENU, self.onBrowse, open_file_menu_item)
 
+=======
+
+        menubar.Append(fileMenu, '&File')
+        self.frame.SetMenuBar(menubar)
+        self.frame.Bind(wx.EVT_MENU, self.onBrowse, open_file_menu_item)
+
+>>>>>>> parent of cf9670b... attempt at song window
         self.frame.Bind(wx.EVT_MENU, self.onBrowseAdd, add_file_menu_item)
         
     #----------------------------------------------------------------------
